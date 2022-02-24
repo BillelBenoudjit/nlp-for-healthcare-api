@@ -2,35 +2,85 @@ from transformers import AutoTokenizer, AutoModelForTokenClassification
 import numpy as np
 import torch
 
+# import nltk
+# nltk.download('averaged_perceptron_tagger')
+
+from nltk import pos_tag
+from nltk.tree import Tree
+from nltk.chunk import conlltags2tree
+
+
 async def predict(sentence):
-    # sentence = "un homme âgé de 61 ans."
+    tokenizer = AutoTokenizer.from_pretrained("data/clinical_ner_camembert_80")
+    id2label = {0: 'B-frequence', 1: 'I-genre', 2: 'I-frequence', 3: 'I-sosy', 4: 'B-sosy', 5: 'I-origine',
+                6: 'B-substance', 7: 'I-dose', 8: 'O', 9: 'B-age', 10: 'B-origine', 11: 'B-issue', 12: 'I-pathologie',
+                13: 'B-dose', 14: 'B-examen', 15: 'B-mode', 16: 'B-moment', 17: 'I-anatomie', 18: 'B-valeur',
+                19: 'B-date', 20: 'B-anatomie', 21: 'I-duree', 22: 'I-moment', 23: 'B-traitement', 24: 'I-substance',
+                25: 'B-duree', 26: 'I-mode', 27: 'I-issue', 28: 'I-traitement', 29: 'B-pathologie', 30: 'I-date',
+                31: 'I-valeur', 32: 'I-examen', 33: 'I-age', 34: 'B-genre'}
 
-    tokenizer = AutoTokenizer.from_pretrained("data/clinical_ner_camembert_40")
+    """
+    sentence = "un homme âgé de 61 ans."
+    print(sentence[0:5], len(sentence[0:5]))
+    print(sentence[6:9], len(sentence[6:9]))
+    print(sentence[10:12], len(sentence[10:12]))
+    print(sentence[13:15], len(sentence[13:15]))
+    print(sentence[16:20], len(sentence[16:20]))
+    """
 
-    inputs = tokenizer(sentence, return_tensors="pt")
+    inputs = tokenizer(sentence, return_offsets_mapping=True, return_tensors="pt")
 
-    print(inputs)
-
+    encode = tokenizer.tokenize(sentence)
     decode = tokenizer.decode(inputs['input_ids'][0])
-    print(decode)
 
     flat_pred = []
-    id2label = {0: 'B-age', 1: 'B-anatomie', 2: 'B-frequence', 3: 'I-valeur', 4: 'B-sosy', 5: 'I-mode', 6: 'I-duree',
-     7: 'B-moment', 8: 'B-origine', 9: 'I-frequence', 10: 'I-traitement', 11: 'I-origine', 12: 'O', 13: 'I-age',
-     14: 'B-examen', 15: 'I-issue', 16: 'B-pathologie', 17: 'I-genre', 18: 'I-moment', 19: 'I-sosy', 20: 'B-date',
-     21: 'I-pathologie', 22: 'B-mode', 23: 'I-anatomie', 24: 'I-examen', 25: 'B-issue', 26: 'I-substance', 27: 'B-dose',
-     28: 'I-date', 29: 'I-dose', 30: 'B-valeur', 31: 'B-traitement', 32: 'B-duree', 33: 'B-substance', 34: 'B-genre'}
 
     with torch.no_grad():
-        model = AutoModelForTokenClassification.from_pretrained("data/clinical_ner_camembert_40")
+        model = AutoModelForTokenClassification.from_pretrained("data/clinical_ner_camembert_80")
         outputs = model(inputs['input_ids'], attention_mask=inputs['attention_mask'])
         logits = outputs.logits
         logits = logits.detach().cpu().numpy()
         flat_pred.extend(np.argmax(logits, axis=-1).flatten())
 
     predictions = [id2label[id] for id in flat_pred if id != -100]
-
+    '''
+    print(len(flat_pred), len(predictions), len(inputs['offset_mapping'][0]))
     print('Sentence: ', decode)
     print('Labels', flat_pred)
     print('Predictions', predictions)
-    return predictions
+    print('Encode', encode)
+    for code, prediction, map in zip(encode, predictions[1:len(predictions)-1], inputs['offset_mapping'][0][1:23]):
+        print(code, prediction, map)
+    # print('sentence:', len(encode), 'predictions:', len(predictions), 'sentence:', len(sentence.split(" ")))
+    '''
+    tags = predictions[1:len(predictions) - 1]
+    pos_tags = [pos for token, pos in pos_tag(encode)]
+    # print(len(pos_tags))
+    # print('pos_tags:', pos_tags)
+    conlltags = [(token, pos, tg) for token, pos, tg in zip(encode, pos_tags, tags)]
+    # print('conlltags:', conlltags)
+    ne_tree = conlltags2tree(conlltags)
+    # print('ne_tree:', ne_tree)
+    annotated_text = []
+    for subtree in ne_tree:
+        # skipping 'O' tags
+        if type(subtree) == Tree:
+            # print('subtree:', subtree)
+            # print('subtree leaves:', subtree.leaves())
+            original_label = subtree.label()
+            original_text = " ".join([token for token, pos in subtree.leaves()])
+            # print("original text:", original_text)
+            if original_text != "▁":
+                entities = [entity.replace(" ", "") for entity in original_text.split("▁") if len(entity) != 0]
+                # print(entities)
+                original_text = " ".join([entity for entity in entities])
+                start = sentence.find(original_text)
+                end = start + len(original_text)
+                annotated_text.append({
+                    'entity': original_text,
+                    'tag': original_label,
+                    'start': start,
+                    'end': end
+                })
+
+    return annotated_text
