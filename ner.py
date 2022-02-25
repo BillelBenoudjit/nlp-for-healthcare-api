@@ -10,6 +10,12 @@ from nltk.tree import Tree
 from nltk.chunk import conlltags2tree
 
 
+class Annotation:
+    def __init__(self, entity, tag=""):
+        self.entity = entity
+        self.tag = tag
+
+
 async def predict(sentence):
     tokenizer = AutoTokenizer.from_pretrained("data/clinical_ner_camembert_80")
     id2label = {0: 'B-frequence', 1: 'I-genre', 2: 'I-frequence', 3: 'I-sosy', 4: 'B-sosy', 5: 'I-origine',
@@ -74,13 +80,23 @@ async def predict(sentence):
                 entities = [entity.replace(" ", "") for entity in original_text.split("▁") if len(entity) != 0]
                 # print(entities)
                 original_text = " ".join([entity for entity in entities])
-                start = sentence.find(original_text)
-                end = start + len(original_text)
-                annotated_text.append({
-                    'entity': original_text,
-                    'tag': original_label,
-                    'start': start,
-                    'end': end
-                })
+                # start = sentence.find(original_text)
+                # end = start + len(original_text)
+                annotated_text.append(
+                    Annotation(original_text, original_label)
+                )
 
-    return annotated_text
+    finalTokens = []
+    tokens = sentence
+    for annotation in annotated_text:
+        tokens = tokens.split(annotation.entity)
+        if len(tokens) == 2:
+            finalTokens.append(Annotation(tokens[0]))
+            finalTokens.append(annotation)
+            if len(tokens[1]) != 0:
+                tokens = tokens[1]
+
+    if type(tokens) == str and len(tokens) != 0:
+        finalTokens.append(Annotation(tokens))
+
+    return finalTokens
