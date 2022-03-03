@@ -59,7 +59,11 @@ async def predict(sentence):
         print(code, prediction, map)
     # print('sentence:', len(encode), 'predictions:', len(predictions), 'sentence:', len(sentence.split(" ")))
     '''
+    print('encode:', encode)
+
     tags = predictions[1:len(predictions) - 1]
+    for code, tag in zip(encode, tags):
+        print("code: ", code, "tag: ", tag)
     pos_tags = [pos for token, pos in pos_tag(encode)]
     # print(len(pos_tags))
     # print('pos_tags:', pos_tags)
@@ -75,6 +79,7 @@ async def predict(sentence):
             # print('subtree leaves:', subtree.leaves())
             original_label = subtree.label()
             original_text = " ".join([token for token, pos in subtree.leaves()])
+            # print(f'subtree: {subtree}, original_text: {original_text}')
             # print("original text:", original_text)
             if original_text != "▁":
                 entities = [entity.replace(" ", "") for entity in original_text.split("▁") if len(entity) != 0]
@@ -87,16 +92,30 @@ async def predict(sentence):
                 )
 
     finalTokens = []
-    tokens = sentence
-    for annotation in annotated_text:
-        tokens = tokens.split(annotation.entity)
-        if len(tokens) == 2:
-            finalTokens.append(Annotation(tokens[0]))
-            finalTokens.append(annotation)
-            if len(tokens[1]) != 0:
-                tokens = tokens[1]
+    tokens = []
+    # for entity in annotated_text:
+    #    print(entity.entity, entity.tag)
 
-    if type(tokens) == str and len(tokens) != 0:
-        finalTokens.append(Annotation(tokens))
+    # print(annotated_text)
+    if len(annotated_text) != 0:
+        # tokensList = sentence
+        for annotation in annotated_text:
+            print(annotation.entity)
+            print('sentence:', sentence)
+            tokens = sentence.split(annotation.entity, 1)
+            print('len(tokens)', len(tokens), 'tokens', tokens)
+            if len(tokens) == 2:
+                finalTokens.append(Annotation(tokens[0]))
+                finalTokens.append(annotation)
+                if len(tokens[1]) != 0:
+                    sentence = tokens[1]
+                    print("--------------------------------")
+
+        if len(tokens) != 0:
+            finalTokens.append(Annotation(sentence))
+
+    # print("sentence: ", sentence)
+    for token in finalTokens:
+        print(token.entity, token.tag)
 
     return finalTokens
