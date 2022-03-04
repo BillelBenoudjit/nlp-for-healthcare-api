@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from camembert import predict_ner_camembert
 from bluebert import predict_ner_bluebert
-# from ner import predict_helper
+from bioclinicalbert import predict_ner_bioclinicalbert
 
 from pydantic import BaseModel
 
@@ -44,9 +44,7 @@ async def predict_entities(data: Data):
     return predictions
 
 
-"""
 @app.post("/ner/clinicalbert")
 async def predict_entities(data: Data):
-    predictions = await predict_helper(data.text)
+    predictions = await predict_ner_bioclinicalbert(data.text)
     return predictions
-"""

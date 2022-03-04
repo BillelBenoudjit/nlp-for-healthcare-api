@@ -16,14 +16,16 @@ class Annotation:
         self.tag = tag
 
 
-async def predict(sentence):
-    tokenizer = AutoTokenizer.from_pretrained("data/clinical_ner_camembert_80")
-    id2label = {0: 'B-frequence', 1: 'I-genre', 2: 'I-frequence', 3: 'I-sosy', 4: 'B-sosy', 5: 'I-origine',
-                6: 'B-substance', 7: 'I-dose', 8: 'O', 9: 'B-age', 10: 'B-origine', 11: 'B-issue', 12: 'I-pathologie',
-                13: 'B-dose', 14: 'B-examen', 15: 'B-mode', 16: 'B-moment', 17: 'I-anatomie', 18: 'B-valeur',
-                19: 'B-date', 20: 'B-anatomie', 21: 'I-duree', 22: 'I-moment', 23: 'B-traitement', 24: 'I-substance',
-                25: 'B-duree', 26: 'I-mode', 27: 'I-issue', 28: 'I-traitement', 29: 'B-pathologie', 30: 'I-date',
-                31: 'I-valeur', 32: 'I-examen', 33: 'I-age', 34: 'B-genre'}
+async def predict_ner_bioclinicalbert(sentence):
+    model_id = "data/clinical_ner_Bio_ClinicalBert"
+    # model_id = "data/clinical_ner_bluebert_pubmed_mimic_uncased"
+    # model_id = "raynardj/ner-disease-ncbi-bionlp-bc5cdr-pubmed"
+
+    sentence = sentence.lower()
+    # print(sentence)
+
+    tokenizer = AutoTokenizer.from_pretrained(model_id)
+    id2label = {0: 'O', 1: 'B-disease', 2: 'I-disease'}
 
     """
     sentence = "un homme âgé de 61 ans."
@@ -39,10 +41,12 @@ async def predict(sentence):
     encode = tokenizer.tokenize(sentence)
     decode = tokenizer.decode(inputs['input_ids'][0])
 
+    # print(decode)
+
     flat_pred = []
 
     with torch.no_grad():
-        model = AutoModelForTokenClassification.from_pretrained("data/clinical_ner_camembert_80")
+        model = AutoModelForTokenClassification.from_pretrained(model_id)
         outputs = model(inputs['input_ids'], attention_mask=inputs['attention_mask'])
         logits = outputs.logits
         logits = logits.detach().cpu().numpy()
@@ -59,11 +63,15 @@ async def predict(sentence):
         print(code, prediction, map)
     # print('sentence:', len(encode), 'predictions:', len(predictions), 'sentence:', len(sentence.split(" ")))
     '''
-    print('encode:', encode)
+    # print('encode:', encode)
 
     tags = predictions[1:len(predictions) - 1]
+    '''
     for code, tag in zip(encode, tags):
-        print("code: ", code, "tag: ", tag)
+        if tag != 'O':
+            print("code: ", code, "tag: ", tag)
+    '''
+
     pos_tags = [pos for token, pos in pos_tag(encode)]
     # print(len(pos_tags))
     # print('pos_tags:', pos_tags)
@@ -80,42 +88,56 @@ async def predict(sentence):
             original_label = subtree.label()
             original_text = " ".join([token for token, pos in subtree.leaves()])
             # print(f'subtree: {subtree}, original_text: {original_text}')
+            start_words = [word for word in original_text.split(" ") if "#" not in word]
             # print("original text:", original_text)
-            if original_text != "▁":
-                entities = [entity.replace(" ", "") for entity in original_text.split("▁") if len(entity) != 0]
-                # print(entities)
-                original_text = " ".join([entity for entity in entities])
-                # start = sentence.find(original_text)
-                # end = start + len(original_text)
+            # print(start_words)
+            entities = []
+            if len(start_words) <= 2:
+                if len(start_words) == 2:
+                    start = original_text.index(start_words[0])
+                    end = original_text.index(start_words[1])
+                    entities.append(original_text[start:end].replace(" ##", ""))
+                    entities.append(original_text[end:].replace(" ##", ""))
+                else:
+                    entities = [entity for entity in original_text.split("##") if len(entity) != 0]
+                # print("entities: ", entities)
+                # print("-----------------------------------------------------------------------------------------------")
+                # original_text = "".join([entity for entity in entities])
                 annotated_text.append(
                     Annotation(original_text, original_label)
                 )
 
     finalTokens = []
     tokens = []
-    # for entity in annotated_text:
-    #    print(entity.entity, entity.tag)
+    '''
+    for entity in annotated_text:
+        print(entity.entity, entity.tag)
+    '''
 
     # print(annotated_text)
     if len(annotated_text) != 0:
         # tokensList = sentence
         for annotation in annotated_text:
-            print(annotation.entity)
-            print('sentence:', sentence)
+            # print(annotation.entity)
+            # print('sentence:', sentence)
             tokens = sentence.split(annotation.entity, 1)
-            print('len(tokens)', len(tokens), 'tokens', tokens)
+            # print('len(tokens)', len(tokens), 'tokens', tokens)
             if len(tokens) == 2:
                 finalTokens.append(Annotation(tokens[0]))
                 finalTokens.append(annotation)
                 if len(tokens[1]) != 0:
                     sentence = tokens[1]
-                    print("--------------------------------")
+                else:
+                    # print("annotation:", annotation, " index:", annotated_text.index(annotation))
+                    if annotated_text.index(annotation) == len(annotated_text) - 1:
+                        sentence = ""
 
-        if len(tokens) != 0:
+        if len(sentence) != 0:
             finalTokens.append(Annotation(sentence))
 
     # print("sentence: ", sentence)
+    '''
     for token in finalTokens:
         print(token.entity, token.tag)
-
+    '''
     return finalTokens
