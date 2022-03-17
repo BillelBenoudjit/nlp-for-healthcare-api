@@ -1,10 +1,14 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from typing import List
+
 from camembert import predict_ner_camembert
 from english_ner import predict_english_ner
+from sentence_similarity import predict_similar_cases
 
 from pydantic import BaseModel
+
 
 class Data(BaseModel):
     text: str
@@ -62,7 +66,8 @@ async def predict_entities(data: Data):
 
 @app.post("/ner/bionlp13cg/bluebert")
 async def predict_entities(data: Data):
-    id2label = {0: 'I-Immaterial_anatomical_entity', 1: 'B-Developing_anatomical_structure', 2: 'B-Pathological_formation',
+    id2label = {0: 'I-Immaterial_anatomical_entity', 1: 'B-Developing_anatomical_structure',
+                2: 'B-Pathological_formation',
                 3: 'O', 4: 'B-Cancer', 5: 'I-Gene_or_gene_product', 6: 'I-Anatomical_system', 7: 'B-Organism_substance',
                 8: 'I-Amino_acid', 9: 'I-Developing_anatomical_structure', 10: 'I-Tissue', 11: 'I-Organism',
                 12: 'B-Organism_subdivision', 13: 'I-Organism_substance', 14: 'I-Cellular_component',
@@ -73,4 +78,10 @@ async def predict_entities(data: Data):
                 31: 'B-Multi-tissue_structure', 32: 'B-Anatomical_system'}
     model_id = "data/BioNLP13CG_bluebert_5epochs"
     predictions = await predict_english_ner(data.text, model_id, id2label)
+    return predictions
+
+
+@app.post("/sts")
+async def predict_similarity(data: List):
+    predictions = await predict_similar_cases("data/camembert-large-semantic-sim-2epochs", data)
     return predictions
