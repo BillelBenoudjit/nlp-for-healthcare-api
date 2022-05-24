@@ -9,6 +9,8 @@ from sentence_similarity import predict_similar_cases
 
 from pydantic import BaseModel
 
+from server.routes.patient import router as PatientRouter
+
 
 class Data(BaseModel):
     text: str
@@ -27,6 +29,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+app.include_router(PatientRouter, tags=["Patient"], prefix="/patient")
 
 
 @app.get("/")
