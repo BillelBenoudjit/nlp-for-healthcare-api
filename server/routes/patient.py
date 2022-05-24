@@ -6,7 +6,8 @@ from server.database import (
      get_patients,
      get_patient,
      update_patient,
-     delete_patient
+     delete_patient,
+     add_consultation
 )
 
 
@@ -32,6 +33,15 @@ async def get_patients_data():
 
 
 @router.get("/{id}")
-async def get_patient_data(id):
+async def get_patient_data(id: str):
      patient = await get_patient(id)
      return patient
+
+
+@router.put("/{id}")
+async def add_consultation_data(id: str, consultation: ConsultationSchema):
+     consultation = {key: value for key, value in consultation.dict().items() if value is not None}
+     patient_with_new_consultation = await add_consultation(id, consultation)
+     return patient_with_new_consultation
+
+

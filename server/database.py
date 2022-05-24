@@ -64,7 +64,7 @@ async def update_patient(id, data):
         raise HTTPException(status_code=404, detail=e)
 
 
-async def delete_patient(id: str):
+async def delete_patient(id):
     try:
         patient = await patient_collection.find_one({"_id": ObjectId(id)})
         if patient:
@@ -73,3 +73,22 @@ async def delete_patient(id: str):
         return False
     except Exception as e:
         raise HTTPException(status_code=404, detail=e)
+
+
+async def add_consultation(id, consultation):
+    try:
+        patient = await patient_collection.find_one({"_id": ObjectId(id)})
+        if patient:
+            updated_patient = await patient_collection.update_one(
+                {"_id": ObjectId(id)},
+                {"$push": {"consultations": consultation}}
+            )
+            if updated_patient:
+                patient = await patient_collection.find_one({"_id": ObjectId(id)})
+                patient["_id"] = str(patient["_id"])
+                return patient
+            return False
+        return False
+    except Exception as e:
+        raise HTTPException(status_code=404, detail=e)
+

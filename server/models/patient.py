@@ -13,7 +13,7 @@ class PatientSchema(BaseModel):
     firstName: str = Field(...)
     lastName: str = Field(...)
     age: str = Field(...)
-    consultations:  Union[List[ConsultationSchema], None] = None
+    consultations:  List[ConsultationSchema]
 
     class Config:
         arbitrary_types_allowed = True
