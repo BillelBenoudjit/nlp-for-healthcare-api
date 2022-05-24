@@ -22,7 +22,7 @@ id2label = {0: 'B-frequence', 1: 'I-genre', 2: 'I-frequence', 3: 'I-sosy', 4: 'B
                 25: 'B-duree', 26: 'I-mode', 27: 'I-issue', 28: 'I-traitement', 29: 'B-pathologie', 30: 'I-date',
                 31: 'I-valeur', 32: 'I-examen', 33: 'I-age', 34: 'B-genre'}
 
-model_id = "data/clinical_ner_camembert_80"
+model_id = "server/data/clinical_ner_camembert_80"
 
 async def predict_ner_camembert(sentence):
     tokenizer = AutoTokenizer.from_pretrained(model_id)
