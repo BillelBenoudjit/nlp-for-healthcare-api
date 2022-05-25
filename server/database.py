@@ -26,6 +26,43 @@ async def add_patient(patient):
         raise HTTPException(status_code=404, detail=e)
 
 
+async def add_new_consultation(patient):
+    try:
+        checked_patient = await patient_collection.find_one({
+            "firstName": patient["firstName"],
+            "lastName": patient["lastName"],
+            "age": patient["age"]
+        })
+        if checked_patient:
+            id = str(checked_patient["_id"])
+            if len(patient["consultations"]) > 0:
+                consultation = patient["consultations"][0]
+                patient_with_new_consultation = await add_consultation(id, consultation)
+                return {"response": "Consultation added: %s" % (patient_with_new_consultation)}
+            else:
+                return {"response": "No consultation added: %s" % (checked_patient)}
+        else:
+            if len(patient["consultations"]) > 0:
+                new_patient_data = {
+                    "firstName": patient["firstName"],
+                    "lastName": patient["lastName"],
+                    "age": patient["age"],
+                    "consultations": patient["consultations"][0]
+                }
+            else:
+                new_patient_data = {
+                    "firstName": patient["firstName"],
+                    "lastName": patient["lastName"],
+                    "age": patient["age"],
+                    "consultations": []
+                }
+            patient = await patient_collection.insert_one(new_patient_data)
+            new_patient = await patient_collection.find_one({"_id": patient.inserted_id})
+            return {"response": "Patient inserted: %s" % (new_patient)}
+    except Exception as e:
+        raise HTTPException(status_code=404, detail=e)
+
+
 async def get_patients():
     patients_list = []
     try:

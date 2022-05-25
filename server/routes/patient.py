@@ -2,7 +2,7 @@ from fastapi import APIRouter, Body
 from fastapi.encoders import jsonable_encoder
 
 from server.database import (
-     add_patient,
+     add_new_consultation,
      get_patients,
      get_patient,
      update_patient,
@@ -18,12 +18,20 @@ from server.models.patient import (
 
 router = APIRouter()
 
-
+'''
 @router.post("/")
 async def add_new_patient(patient: PatientSchema):
      patient = jsonable_encoder(patient)
      patient = await add_patient(patient)
      return patient
+'''
+
+
+@router.post("/")
+async def add_consultation_to_patient(patient: PatientSchema):
+     patient = jsonable_encoder(patient)
+     new_patient = await add_new_consultation(patient)
+     return new_patient
 
 
 @router.get("/")

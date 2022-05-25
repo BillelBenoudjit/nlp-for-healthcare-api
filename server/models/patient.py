@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field
 
 class ConsultationSchema(BaseModel):
     entities: list = []
+    diagnosis: Optional[str]
     time: Optional[str]
     date: Optional[str]
 
@@ -24,6 +25,7 @@ class PatientSchema(BaseModel):
             "consultations": [
                 {
                     "entities": [],
+                    "diagnosis": "",
                     "time": "",
                     "date": ""
                 }
