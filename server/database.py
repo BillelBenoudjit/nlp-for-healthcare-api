@@ -36,6 +36,7 @@ async def add_new_consultation(patient):
         if checked_patient:
             id = str(checked_patient["_id"])
             if len(patient["consultations"]) > 0:
+                print(patient["consultations"][0])
                 consultation = patient["consultations"][0]
                 patient_with_new_consultation = await add_consultation(id, consultation)
                 return {"response": "Consultation added: %s" % (patient_with_new_consultation)}
@@ -47,7 +48,7 @@ async def add_new_consultation(patient):
                     "firstName": patient["firstName"],
                     "lastName": patient["lastName"],
                     "age": patient["age"],
-                    "consultations": patient["consultations"][0]
+                    "consultations": patient["consultations"]
                 }
             else:
                 new_patient_data = {
