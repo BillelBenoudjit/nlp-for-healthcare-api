@@ -2,11 +2,11 @@ FROM python:3.8-slim-buster
 
 RUN apt-get update
 
-COPY . /CancerNER
+COPY . /nlp-for-healthcare-api
 
-COPY ./requirements.txt /CancerNER/requirements.txt
+# COPY ./requirements.txt /nlp-for-healthcare-api/requirements.txt
 
-WORKDIR CancerNER
+WORKDIR nlp-for-healthcare-api
 
 EXPOSE 8000:8000
 
