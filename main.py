@@ -4,7 +4,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from server.routes.patient import router as PatientRouter
 from server.routes.ner import router as NamedEntityRecognitionRouter
 from server.routes.sts import router as SemanticSimilarityRouter
+import uvicorn
 
+from decouple import config
+
+
+PORT = config("PORT")
 
 app = FastAPI()
 
@@ -29,3 +34,6 @@ app.include_router(SemanticSimilarityRouter, tags=["Semantic Similarity"], prefi
 @app.get("/")
 async def root():
     return {"message": "Hello to the nlp-for-helathcare api"}
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=int(PORT))
