@@ -12,6 +12,7 @@ EXPOSE 8000:8000
 
 RUN python3 -m pip install -r requirements.txt
 
-RUN python3 -m nltk.downloader averaged_perceptron_tagger
+RUN [ "python3", "-c", "import nltk; nltk.download('averaged_perceptron_tagger', download_dir='/usr/local/nltk_data')" ]
 
-CMD [ "uvicorn", "main:app", "--host", "0.0.0.0", "--reload" ]
+CMD [ "python", "main.py"]
+# CMD [ "uvicorn", "main:app", "--host", "0.0.0.0", "--reload" ]
